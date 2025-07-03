@@ -55,10 +55,11 @@ jobs:
           --max-instances=3 \
           --timeout=900s \
           --concurrency=80 \
-          --set-env-vars="GUNICORN_CMD_ARGS=--bind=0.0.0.0:8080 --workers=2 --timeout=300 --preload,CLOUD_RUN_HEALTH_CHECK_PATH=/health" \
+          --set-env-vars="GUNICORN_CMD_ARGS=--bind=0.0.0.0:8080 --workers=2 --timeout=300 --preload" \
+          --set-env-vars="CLOUD_RUN_HEALTH_CHECK_PATH=/health" \
           --port=8080 \
-          --deploy-health-check \
-          --health-check-initial-delay=10
+          --ingress=all \
+          --deploy-health-check
 
     - name: Verify deployment
       run: |
