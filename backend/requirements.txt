@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+langchain
+chromadb
+google-cloud-aiplatform
+vertexai
+PyPDF2
+trulens_eval
