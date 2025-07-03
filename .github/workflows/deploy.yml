@@ -23,7 +23,7 @@ jobs:
     - name: Authenticate to GCP
       uses: google-github-actions/auth@v1
       with:
-        credentials_json: ${{ secrets.GCP_CREDENTIALS }}  # Raw JSON (not base64)
+        credentials_json: ${{ secrets.GCP_CREDENTIALS }}
         project_id: ${{ secrets.PROJECT_ID }}
 
     - name: Set up Cloud SDK
@@ -34,22 +34,20 @@ jobs:
 
     - name: Build and Push
       run: |
+        # Navigate to backend directory
+        cd backend
+        
         # Verify Dockerfile exists
-        if [ ! -f "backend/Dockerfile" ]; then
-          echo "Creating default Dockerfile..."
-          cat > backend/Dockerfile <<EOF
-        FROM python:3.9-slim
-        WORKDIR /app
-        COPY . .
-        RUN pip install -r requirements.txt
-        CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:8080"]
-        EOF
+        if [ ! -f "Dockerfile" ]; then
+          echo "ERROR: Dockerfile not found in backend directory"
+          exit 1
         fi
 
+        # Build and submit from the backend directory
         gcloud builds submit \
           --tag gcr.io/$PROJECT_ID/$SERVICE_NAME \
           --project $PROJECT_ID \
-          backend/
+          .
 
     - name: Deploy to Cloud Run
       run: |
