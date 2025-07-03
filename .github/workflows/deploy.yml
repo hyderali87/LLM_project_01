@@ -52,9 +52,13 @@ jobs:
           --cpu=2 \
           --memory=2Gi \
           --min-instances=1 \
-          --timeout=1200s \
-          --max-instances=5 \
-          --set-env-vars=GUNICORN_CMD_ARGS="--bind=0.0.0.0:8080 --workers=2 --timeout=600 --preload"
+          --max-instances=3 \
+          --timeout=900s \
+          --concurrency=80 \
+          --set-env-vars="GUNICORN_CMD_ARGS=--bind=0.0.0.0:8080 --workers=2 --timeout=300 --preload" \
+          --port=8080 \
+          --health-check-path=/health \
+          --health-check-interval=10s
 
     - name: Verify deployment
       run: |

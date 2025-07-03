@@ -1,32 +1,23 @@
 import os
 from flask import Flask, jsonify
+import signal
+import sys
 
-# Create Flask app
 app = Flask(__name__)
 
-# Simple route
 @app.route('/')
 def hello():
-    return "Hello, World!"
+    return jsonify({"status": "running", "message": "LLM Backend Service"})
 
-# Health check endpoint (required for Cloud Run)
 @app.route('/health')
 def health_check():
-    return jsonify({"status": "healthy", "message": "Service is running"}), 200
+    return jsonify({"status": "healthy"}), 200
 
-# Error handler
-@app.errorhandler(404)
-def not_found(e):
-    return jsonify({"error": "Not found"}), 404
+def handle_shutdown(signum, frame):
+    print("Received shutdown signal")
+    sys.exit(0)
 
 if __name__ == '__main__':
-    # Get port from environment variable or default to 8080
+    signal.signal(signal.SIGTERM, handle_shutdown)  # For Cloud Run shutdowns
     port = int(os.environ.get('PORT', 8080))
-    
-    # Run the app with explicit host and port
-    app.run(
-        host='0.0.0.0',
-        port=port,
-        # Disable debug in production
-        debug=os.environ.get('FLASK_DEBUG', 'false').lower() == 'true'
-    )
+    app.run(host='0.0.0.0', port=port, threaded=True)
