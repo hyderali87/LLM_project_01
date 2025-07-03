@@ -1,21 +1,68 @@
-name: Deploy to Vertex AI
+name: Build and Deploy to GCP Cloud Run
+
 on:
   push:
-    branches: [main]
-jobs:
-  build-deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: google-github-actions/auth@v1
-        with:
-          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
-      - name: Deploy Backend
-        run: |
-          gcloud builds submit --tag gcr.io/$PROJECT_ID/llm-backend backend/
-          gcloud run deploy llm-backend \
-            --image gcr.io/$PROJECT_ID/llm-backend \
-            --platform managed \
-            --region us-central1 \
-            --allow-unauthenticated
+env:
+  PROJECT_ID: ${{ secrets.PROJECT_ID }}  # Changed from GCP_PROJECT_ID
+  SERVICE_NAME: llm-backend
+  REGION: us-central1
+
+jobs:
+  setup-build-deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Set up Google Cloud
+      uses: google-github-actions/setup-gcloud@v1
+      with:
+        project_id: ${{ secrets.PROJECT_ID }}  # Changed from GCP_PROJECT_ID
+        service_account_key: ${{ secrets.GCP_CREDENTIALS }}  # Changed from GCP_SA_KEY_BASE64
+        export_default_credentials: true
+
+    - name: Configure Docker
+      run: gcloud auth configure-docker --quiet
+
+    - name: Build and Push Container
+      run: |
+        # Verify PROJECT_ID is set
+        if [ -z "$PROJECT_ID" ]; then
+          echo "ERROR: PROJECT_ID is not set"
+          exit 1
+        fi
+
+        # Ensure Dockerfile exists
+        if [ ! -f "backend/Dockerfile" ]; then
+          echo "Creating default Dockerfile..."
+          cat > backend/Dockerfile <<EOF
+        FROM python:3.9-slim
+        WORKDIR /app
+        COPY . .
+        RUN pip install -r requirements.txt
+        CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:8080"]
+        EOF
+        fi
+
+        # Build and submit
+        gcloud builds submit \
+          --tag gcr.io/$PROJECT_ID/$SERVICE_NAME \
+          --project $PROJECT_ID \
+          backend/
+
+    - name: Deploy to Cloud Run
+      run: |
+        gcloud run deploy $SERVICE_NAME \
+          --image gcr.io/$PROJECT_ID/$SERVICE_NAME \
+          --platform managed \
+          --region $REGION \
+          --allow-unauthenticated
