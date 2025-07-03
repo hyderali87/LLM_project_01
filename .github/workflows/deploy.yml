@@ -3,17 +3,14 @@ name: Build and Deploy to GCP Cloud Run
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
 
 env:
-  PROJECT_ID: ${{ secrets.PROJECT_ID }}  # Changed from GCP_PROJECT_ID
+  PROJECT_ID: ${{ secrets.PROJECT_ID }}
   SERVICE_NAME: llm-backend
   REGION: us-central1
 
 jobs:
-  setup-build-deploy:
-    name: Build and Deploy
+  deploy:
     runs-on: ubuntu-latest
     permissions:
       contents: 'read'
@@ -23,25 +20,21 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
 
-    - name: Set up Google Cloud
-      uses: google-github-actions/setup-gcloud@v1
+    - name: Authenticate to GCP
+      uses: google-github-actions/auth@v1
       with:
-        project_id: ${{ secrets.PROJECT_ID }}  # Changed from GCP_PROJECT_ID
-        service_account_key: ${{ secrets.GCP_CREDENTIALS }}  # Changed from GCP_SA_KEY_BASE64
-        export_default_credentials: true
+        credentials_json: ${{ secrets.GCP_CREDENTIALS }}  # Raw JSON (not base64)
+        project_id: ${{ secrets.PROJECT_ID }}
+
+    - name: Set up Cloud SDK
+      uses: google-github-actions/setup-gcloud@v1
 
     - name: Configure Docker
       run: gcloud auth configure-docker --quiet
 
-    - name: Build and Push Container
+    - name: Build and Push
       run: |
-        # Verify PROJECT_ID is set
-        if [ -z "$PROJECT_ID" ]; then
-          echo "ERROR: PROJECT_ID is not set"
-          exit 1
-        fi
-
-        # Ensure Dockerfile exists
+        # Verify Dockerfile exists
         if [ ! -f "backend/Dockerfile" ]; then
           echo "Creating default Dockerfile..."
           cat > backend/Dockerfile <<EOF
@@ -53,7 +46,6 @@ jobs:
         EOF
         fi
 
-        # Build and submit
         gcloud builds submit \
           --tag gcr.io/$PROJECT_ID/$SERVICE_NAME \
           --project $PROJECT_ID \
