@@ -49,16 +49,18 @@ jobs:
           --platform=managed \
           --region=$REGION \
           --allow-unauthenticated \
-          --cpu=1 \
-          --memory=1Gi \
+          --cpu=2 \
+          --memory=2Gi \
           --min-instances=1 \
-          --timeout=900s \
-          --set-env-vars=GUNICORN_CMD_ARGS="--bind=0.0.0.0:8080 --workers=1 --timeout=600"
+          --timeout=1200s \
+          --max-instances=5 \
+          --set-env-vars=GUNICORN_CMD_ARGS="--bind=0.0.0.0:8080 --workers=2 --timeout=600 --preload"
 
     - name: Verify deployment
       run: |
         SERVICE_URL=$(gcloud run services describe $SERVICE_NAME --platform=managed --region=$REGION --format='value(status.url)')
         echo "Service deployed successfully to: $SERVICE_URL"
-        echo "Waiting 60 seconds for service initialization..."
-        sleep 60
-        curl -I $SERVICE_URL || echo "Initial curl failed - service may still be starting"
+        echo "Waiting 90 seconds for service initialization..."
+        sleep 90
+        curl -I $SERVICE_URL || echo "Initial curl failed - checking logs..."
+        gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=$SERVICE_NAME" --limit=50
