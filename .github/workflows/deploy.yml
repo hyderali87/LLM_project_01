@@ -34,16 +34,9 @@ jobs:
 
     - name: Build and Push
       run: |
-        # Verify Dockerfile exists
-        if [ ! -f "backend/Dockerfile" ]; then
-          echo "ERROR: Dockerfile not found in backend directory"
-          exit 1
-        fi
-
-        # Build from root directory specifying Dockerfile path
+        cd backend
         gcloud builds submit \
           --tag gcr.io/$PROJECT_ID/$SERVICE_NAME \
-          --dockerfile backend/Dockerfile \
           .
 
     - name: Deploy to Cloud Run
