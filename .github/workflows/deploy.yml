@@ -35,14 +35,15 @@ jobs:
     - name: Configure Docker
       run: gcloud auth configure-docker --quiet
 
-    - name: Build Docker image
+    # Backend deployment
+    - name: Build Docker image (Backend)
       run: |
         cd backend
         gcloud builds submit --quiet \
           --tag=gcr.io/$PROJECT_ID/$SERVICE_NAME \
           .
 
-    - name: Deploy to Cloud Run
+    - name: Deploy Backend to Cloud Run
       run: |
         gcloud beta run deploy $SERVICE_NAME --quiet \
           --image=gcr.io/$PROJECT_ID/$SERVICE_NAME \
@@ -61,18 +62,26 @@ jobs:
           --ingress=all \
           --deploy-health-check
 
-    - name: Verify deployment
+    - name: Verify Backend deployment
       run: |
-        SERVICE_URL=$(gcloud run services describe $SERVICE_NAME --platform=managed --region=$REGION --format='value(status.url)')
-        echo "Service deployed successfully to: $SERVICE_URL"
-        echo "Waiting 90 seconds for service initialization..."
-        sleep 90
-        curl -I $SERVICE_URL || echo "Initial curl failed - checking logs..."
+        BACKEND_URL=$(gcloud run services describe $SERVICE_NAME --platform=managed --region=$REGION --format='value(status.url)')
+        echo "Backend deployed successfully to: $BACKEND_URL"
+        echo "Waiting 60 seconds for backend initialization..."
+        sleep 60
+        curl -I $BACKEND_URL/health || echo "Initial health check failed - checking logs..."
         gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=$SERVICE_NAME" --limit=50
-    
-    - name: Deploy Streamlit Frontend
+
+    # Frontend deployment
+    - name: Build Docker image (Frontend)
       run: |
-        gcloud beta run deploy llm-frontend \
+        cd frontend
+        gcloud builds submit --quiet \
+          --tag=gcr.io/$PROJECT_ID/llm-frontend \
+          .
+
+    - name: Deploy Streamlit Frontend to Cloud Run
+      run: |
+        gcloud beta run deploy llm-frontend --quiet \
           --image=gcr.io/$PROJECT_ID/llm-frontend \
           --platform=managed \
           --region=$REGION \
@@ -80,4 +89,16 @@ jobs:
           --port=8501 \
           --set-env-vars=BACKEND_URL=https://$SERVICE_NAME.a.run.app \
           --cpu=1 \
-          --memory=2Gi
+          --memory=2Gi \
+          --min-instances=1 \
+          --timeout=600s \
+          --ingress=all
+
+    - name: Verify Frontend deployment
+      run: |
+        FRONTEND_URL=$(gcloud run services describe llm-frontend --platform=managed --region=$REGION --format='value(status.url)')
+        echo "Frontend deployed successfully to: $FRONTEND_URL"
+        echo "Waiting 30 seconds for frontend initialization..."
+        sleep 30
+        curl -I $FRONTEND_URL || echo "Initial frontend check failed - checking logs..."
+        gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=llm-frontend" --limit=50
