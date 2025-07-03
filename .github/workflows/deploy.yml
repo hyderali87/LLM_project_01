@@ -1,4 +1,4 @@
-name: Build and Deploy to GCP Cloud Run
+name: Build and Deploy to Cloud Run
 
 on:
   push:
@@ -17,10 +17,10 @@ jobs:
       id-token: 'write'
 
     steps:
-    - name: Checkout
+    - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Authenticate to GCP
+    - name: Google Cloud Auth
       uses: google-github-actions/auth@v1
       with:
         credentials_json: ${{ secrets.GCP_CREDENTIALS }}
@@ -29,28 +29,20 @@ jobs:
     - name: Set up Cloud SDK
       uses: google-github-actions/setup-gcloud@v1
 
-    - name: Configure Docker
-      run: gcloud auth configure-docker --quiet
-
-    - name: Build and Push
+    - name: Build Docker image
       run: |
         cd backend
         gcloud builds submit \
-          --tag gcr.io/$PROJECT_ID/$SERVICE_NAME \
+          --tag=gcr.io/$PROJECT_ID/$SERVICE_NAME \
           .
 
     - name: Deploy to Cloud Run
       run: |
         gcloud run deploy $SERVICE_NAME \
-          --image gcr.io/$PROJECT_ID/$SERVICE_NAME \
-          --platform managed \
-          --region $REGION \
-          --port 8080 \
-          --timeout 600 \  # Increased timeout
-          --cpu 1 \  # Ensure enough resources
-          --memory 512Mi \
-          --concurrency 80 \
-          --set-env-vars PORT=8080 \
-          --health-check-path=/healthz \
-          --health-check-interval=10s \
-          --allow-unauthenticated
+          --image=gcr.io/$PROJECT_ID/$SERVICE_NAME \
+          --platform=managed \
+          --region=$REGION \
+          --port=8080 \
+          --timeout=600 \
+          --set-env-vars=PORT=8080 \
+ 
