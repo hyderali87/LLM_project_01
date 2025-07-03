@@ -3,7 +3,7 @@ FROM python:3.9-slim
 WORKDIR /app
 COPY . .
 
-RUN pip install streamlit requests
+RUN pip install --no-cache-dir -r requirements.txt
 
 ENV BACKEND_URL=https://your-backend-service.a.run.app
 EXPOSE 8501
