@@ -6,3 +6,5 @@ google-cloud-aiplatform
 vertexai
 PyPDF2
 trulens_eval
+gunicorn==20.1.0
+flask>=2.0.0

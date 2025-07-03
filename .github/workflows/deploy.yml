@@ -45,4 +45,12 @@ jobs:
           --image gcr.io/$PROJECT_ID/$SERVICE_NAME \
           --platform managed \
           --region $REGION \
+          --port 8080 \
+          --timeout 600 \  # Increased timeout
+          --cpu 1 \  # Ensure enough resources
+          --memory 512Mi \
+          --concurrency 80 \
+          --set-env-vars PORT=8080 \
+          --health-check-path=/healthz \
+          --health-check-interval=10s \
           --allow-unauthenticated
