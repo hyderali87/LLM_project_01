@@ -1,31 +1,36 @@
-import os
-from flask import Flask, jsonify
-import signal
-import sys
+from flask import Flask, jsonify, request
+from flask_cors import CORS
+import traceback  # Add this import
 
 app = Flask(__name__)
-
-@app.route('/')
-def hello():
-    return jsonify({"status": "running", "message": "LLM Backend Service"})
-
-@app.route('/health')
-def health_check():
-    return jsonify({"status": "healthy"}), 200
+CORS(app)
 
 @app.route('/ask')
 def ask():
-    question = request.args.get('question')
-    return jsonify({  # Explicitly use jsonify
-        "text": "This is the response",
-        "status": "success"
-    })
+    try:
+        question = request.args.get('question', '')
+        if not question:
+            return jsonify({"error": "Question parameter is required"}), 400
+        
+        # Replace this with your actual logic
+        response_text = f"Processed question: {question}"
+        
+        return jsonify({
+            "text": response_text,
+            "status": "success"
+        })
+    
+    except Exception as e:
+        app.logger.error(f"Error processing request: {str(e)}\n{traceback.format_exc()}")
+        return jsonify({
+            "error": "Internal server error",
+            "details": str(e)
+        }), 500
 
-def handle_shutdown(signum, frame):
-    print("Received shutdown signal")
-    sys.exit(0)
+@app.route('/health')
+def health():
+    return jsonify({"status": "healthy"})
 
 if __name__ == '__main__':
-    signal.signal(signal.SIGTERM, handle_shutdown)  # For Cloud Run shutdowns
     port = int(os.environ.get('PORT', 8080))
-    app.run(host='0.0.0.0', port=port, threaded=True)
+    app.run(host='0.0.0.0', port=port)
