@@ -20,7 +20,7 @@ def ask():
 # Streamlit Frontend
 def main():
     # Configure backend URL (set via environment variable)
-    BACKEND_URL = os.getenv('BACKEND_URL', 'http://localhost:8080')  # Default to local if not set
+    BACKEND_URL = os.getenv('BACKEND_URL', 'http://localhosthttps://llm-backend-565419163909.us-central1.run.app')  # Default to local if not set
     
     st.title("📚 LLM FAQ Assistant")
     st.markdown(f"*Connected to backend at: `{BACKEND_URL}`*")
