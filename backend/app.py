@@ -13,6 +13,14 @@ def hello():
 def health_check():
     return jsonify({"status": "healthy"}), 200
 
+@app.route('/ask')
+def ask():
+    question = request.args.get('question')
+    return jsonify({  # Explicitly use jsonify
+        "text": "This is the response",
+        "status": "success"
+    })
+
 def handle_shutdown(signum, frame):
     print("Received shutdown signal")
     sys.exit(0)
