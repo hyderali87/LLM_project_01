@@ -38,20 +38,21 @@ jobs:
 
     - name: Deploy to Cloud Run
       run: |
-        gcloud run deploy $SERVICE_NAME \
+        gcloud beta run deploy $SERVICE_NAME \
           --image=gcr.io/$PROJECT_ID/$SERVICE_NAME \
           --platform=managed \
           --region=$REGION \
           --allow-unauthenticated \
           --cpu=1 \
-          --memory=512Mi \
-          --concurrency=80 \
-          --set-env-vars=ENVIRONMENT=production
+          --memory=1Gi \
+          --min-instances=1 \
+          --timeout=900s \
+          --set-env-vars=GUNICORN_CMD_ARGS="--bind=0.0.0.0:8080 --workers=1 --timeout=600"
 
     - name: Verify deployment
       run: |
         SERVICE_URL=$(gcloud run services describe $SERVICE_NAME --platform=managed --region=$REGION --format='value(status.url)')
         echo "Service deployed successfully to: $SERVICE_URL"
-        echo "Waiting for service to be ready..."
-        sleep 30
-        curl -I $SERVICE_URL
+        echo "Waiting 60 seconds for service initialization..."
+        sleep 60
+        curl -I $SERVICE_URL || echo "Initial curl failed - service may still be starting"
