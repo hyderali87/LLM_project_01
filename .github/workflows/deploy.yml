@@ -20,25 +20,31 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Google Cloud Auth
+    - name: Set up Google Cloud SDK
+      uses: google-github-actions/setup-gcloud@v1
+      with:
+        install_components: 'beta'
+        version: '529.0.0'
+
+    - name: Authenticate to GCP
       uses: google-github-actions/auth@v1
       with:
         credentials_json: ${{ secrets.GCP_CREDENTIALS }}
         project_id: ${{ secrets.PROJECT_ID }}
 
-    - name: Set up Cloud SDK
-      uses: google-github-actions/setup-gcloud@v1
+    - name: Configure Docker
+      run: gcloud auth configure-docker --quiet
 
     - name: Build Docker image
       run: |
         cd backend
-        gcloud builds submit \
+        gcloud builds submit --quiet \
           --tag=gcr.io/$PROJECT_ID/$SERVICE_NAME \
           .
 
     - name: Deploy to Cloud Run
       run: |
-        gcloud beta run deploy $SERVICE_NAME \
+        gcloud beta run deploy $SERVICE_NAME --quiet \
           --image=gcr.io/$PROJECT_ID/$SERVICE_NAME \
           --platform=managed \
           --region=$REGION \
