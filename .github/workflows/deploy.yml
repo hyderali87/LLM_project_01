@@ -42,7 +42,16 @@ jobs:
           --image=gcr.io/$PROJECT_ID/$SERVICE_NAME \
           --platform=managed \
           --region=$REGION \
-          --port=8080 \
-          --timeout=600 \
-          --set-env-vars=PORT=8080 \
- 
+          --allow-unauthenticated \
+          --cpu=1 \
+          --memory=512Mi \
+          --concurrency=80 \
+          --set-env-vars=ENVIRONMENT=production
+
+    - name: Verify deployment
+      run: |
+        SERVICE_URL=$(gcloud run services describe $SERVICE_NAME --platform=managed --region=$REGION --format='value(status.url)')
+        echo "Service deployed successfully to: $SERVICE_URL"
+        echo "Waiting for service to be ready..."
+        sleep 30
+        curl -I $SERVICE_URL

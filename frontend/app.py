@@ -1,5 +1,6 @@
 import streamlit as st
 import requests
+import os
 
 st.title("📚 LLM FAQ Assistant")
 question = st.text_input("Ask a question")
@@ -8,4 +9,4 @@ if st.button("Submit"):
     st.write(res.json()["text"])
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
+    app.run(host='0.0.0.0', port=port)
